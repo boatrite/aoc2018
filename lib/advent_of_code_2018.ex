@@ -15,12 +15,19 @@ defmodule A do
       # Create the list of frequencies
       Stream.scan(&(&1 + &2))
 
-    Stream.with_index(frequencies) |>
-    Stream.filter(fn {frequency, i} ->
-      # Get all the previous frequencies and see if the next one is a match for
-      # any of the previous ones
-      Enum.take(frequencies, i) |> Enum.member?(frequency) || (i != 0 && frequency == 0)
-      end) |>
-    Enum.take(1) |> Enum.at(0) |> elem(0)
+    stuff =
+      Stream.transform(frequencies, [{0, false}], fn(frequency, acc) ->
+        # Get all the previous frequencies and see if the next one is a match for
+        # any of the previous ones
+        frequencies_to_check_against = Enum.map(acc, fn x -> elem(x, 0) end)
+        is_repeat = Enum.member?(frequencies_to_check_against, frequency)
+        next_acc = acc ++ [{frequency, is_repeat}]
+        if is_repeat, do: {:halt, next_acc}, else: {frequency, next_acc}
+      end)
+
+    Enum.take(stuff, 1)
+
+    # Stream.filter(stuff, fn x -> require IEx; IEx.pry; x end) |>
+    # Enum.take(10) #|> Enum.at(0) |> elem(0)
   end
 end
